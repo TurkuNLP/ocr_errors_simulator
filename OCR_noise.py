@@ -13,6 +13,9 @@ def argparser():
     ap.add_argument('--stdev', type=float, default=0.1)
     ap.add_argument('--min-error-prob', type=float, default=0.0)
     ap.add_argument('--max-error-prob', type=float, default=0.5)
+    ap.add_argument('--delete-prob', type=float, default=0.1)
+    ap.add_argument('--insert-prob', type=float, default=0.1)
+    ap.add_argument('--charset', default=DEFAULT_CHARSET)
     ap.add_argument('--charset_probs', required=True)
     ap.add_argument('jsonl', nargs='+')
     return ap
