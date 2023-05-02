@@ -73,13 +73,13 @@ def add_noise(text, rng, args, probs_dict):
     block_sizes = generate_block_sizes(text, len(text), args.min_block_size, args.max_block_size)
     blocks = generate_blocks(text, block_sizes)
     
-    sys.stderr.write(f" Text: {text}\n")
+    #sys.stderr.write(f" Text: {text}\n")
     
     chars = []
     
     for text_block in blocks:
         prob = set_prob(rng, args)
-        sys.stderr.write(f"Block size: {len(text_block)},\t prob: {prob} \t[{text_block}]\n")
+        #sys.stderr.write(f"Block size: {len(text_block)},\t prob: {prob} \t[{text_block}]\n")
         for c in text_block:
             if rng.random() > prob:
                 chars.append(c)
