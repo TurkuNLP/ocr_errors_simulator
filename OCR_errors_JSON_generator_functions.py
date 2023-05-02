@@ -69,19 +69,21 @@ def update_unknown_char(json_content, char):
 def init_json_file(csv_name, json_name, keep_json=False):
     if keep_json:
         if os.path.exists(json_name) and os.path.getsize(json_name) > 0:
-            with open(json_name, 'r') as json_file:
+            with open(json_name, 'r', encoding='utf-8') as json_file:
                 json_content = json.load(json_file)
         else:
             json_content = {}
     else:
         json_content = {}
     
-    with open(csv_name, 'r') as csv_file:
+    with open(csv_name, 'r', encoding='utf-8') as csv_file:
         csv_reader = csv.reader(csv_file)
         header = next(csv_reader)
         contents = ''.join([cell for row in csv_reader for cell in row])
     
     unique_chars = set(contents)
+    
+    update_unknown_char(json_content, 'OTHER_CHAR')
     
     if ' ' in unique_chars:
         update_unknown_char(json_content, 'SPACE_CHAR')
@@ -92,24 +94,34 @@ def init_json_file(csv_name, json_name, keep_json=False):
     
     json_object = json.dumps(json_content, indent=4)
     
-    with open(json_name, 'w') as json_file:
+    with open(json_name, 'w', encoding='utf-8') as json_file:
         json_file.write(json_object)
 
 def update_known_char(json_content, char, op, error=None):
     json_content[char]['COUNT'] += 1
     json_content[char][op] += 1
+    json_content['OTHER_CHAR']['COUNT'] += 1
+    json_content['OTHER_CHAR'][op] += 1
     
     if op == 'REPLACE':
         if error in json_content[char]['REPLACE_CHAR']:
             json_content[char]['REPLACE_CHAR'][error] += 1
         else:
             json_content[char]['REPLACE_CHAR'][error] = 1
+        if error in json_content['OTHER_CHAR']['REPLACE_CHAR']:
+            json_content['OTHER_CHAR']['REPLACE_CHAR'][error] += 1
+        else:
+            json_content['OTHER_CHAR']['REPLACE_CHAR'][error] = 1
             
     elif op == 'INSERT':
         if error in json_content[char]['INSERT_CHAR']:
             json_content[char]['INSERT_CHAR'][error] += 1
         else:
             json_content[char]['INSERT_CHAR'][error] = 1
+        if error in json_content['OTHER_CHAR']['INSERT_CHAR']:
+            json_content['OTHER_CHAR']['INSERT_CHAR'][error] += 1
+        else:
+            json_content['OTHER_CHAR']['INSERT_CHAR'][error] = 1
 
 def char_section(char):
     if char != ' ':
@@ -140,10 +152,10 @@ def add_data_to_json(good_str, error_str, json_content):
             ops_index += 1
 
 def add_all_data_to_json(good_csv_name, error_csv_name, json_name):
-    with open(json_name, 'r') as json_file:
+    with open(json_name, 'r', encoding='utf-8') as json_file:
         json_content = json.load(json_file)
     
-    with open(good_csv_name, 'r') as good_csv_file, open(error_csv_name, 'r') as error_csv_file:
+    with open(good_csv_name, 'r', encoding='utf-8') as good_csv_file, open(error_csv_name, 'r', encoding='utf-8') as error_csv_file:
         good_csv_reader = csv.reader(good_csv_file)
         error_csv_reader = csv.reader(error_csv_file)
         
@@ -153,12 +165,12 @@ def add_all_data_to_json(good_csv_name, error_csv_name, json_name):
         for good_row, error_row in zip(good_csv_reader, error_csv_reader):
             add_data_to_json(good_row[0], error_row[0], json_content)
     
-    with open(json_name, 'w') as json_file:
+    with open(json_name, 'w', encoding='utf-8') as json_file:
         json_object = json.dumps(json_content, indent=4)
         json_file.write(json_object)
 
 def int_to_probabilities(json_name):
-    with open(json_name, 'r') as json_file:
+    with open(json_name, 'r', encoding='utf-8') as json_file:
         json_content = json.load(json_file)
     
     for char in json_content:
@@ -176,6 +188,15 @@ def int_to_probabilities(json_name):
             for op in ('DELETE', 'REPLACE', 'INSERT'):
                 json_content[char][op] /= nbr_modification
     
-    with open(json_name, 'w') as json_file:
+    with open(json_name, 'w', encoding='utf-8') as json_file:
         json_object = json.dumps(json_content, indent=4)
         json_file.write(json_object)
+
+def json2jsonl(json_name, jsonl_name):
+    with open(json_name, 'r', encoding='utf-8') as json_file:
+        json_content = json.load(json_file)
+    
+    with open(jsonl_name, 'w', encoding='utf-8') as jsonl_file:
+        for obj_name in json_content:
+            obj = {obj_name: json_content[obj_name]}
+            jsonl_file.write(json.dumps(obj) + '\n')
