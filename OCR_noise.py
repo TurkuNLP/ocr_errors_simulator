@@ -119,7 +119,7 @@ def main(argv):
                 indata = json.loads(line)
                 text = indata['text']
                 noised = add_noise(text, rng, args, probs_dict)
-                outdata = { 'input': text, 'output': noised }
+                outdata = { 'input': noised, 'output': text }
                 print(json.dumps(outdata, ensure_ascii=False))
     
 
