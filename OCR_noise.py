@@ -26,15 +26,40 @@ def argparser():
     ap.add_argument('jsonl', nargs='+')
     return ap
 
-def get_other_char(char, op, probs_dict, p_char):
+def get_op_char(rng, args, char, op, probs_dict, other_chars):
+    if rng.random() < args.other_char_prob:
+        return get_other_char(rng, other_chars)
     cumu_p = 0
+    p_char = rng.random()
     for c in probs_dict[char][op + '_CHAR']:
         cumu_p += probs_dict[char][op + '_CHAR'][c]
         if p_char <= cumu_p:
-            if c == 'SPACE_CHAR':
-                return ' '
-            return c
+            if c != 'SPACE_CHAR':
+                return c
+            return ' '
     return char
+
+def get_other_char(rng, other_chars):
+    other_char = rng.choice(other_chars)
+    if other_char != 'SPACE_CHAR':
+        return other_char
+    return ' '
+
+def set_other_chars(probs_dict):
+    other_chars = [c for c in DEFAULT_CHARSET]
+    for other_char in probs_dict:
+        if other_char != 'OTHER_CHAR' and other_char not in other_chars:
+            a = 1
+            other_chars.append(other_char)
+    for other_char in probs_dict['OTHER_CHAR']['REPLACE_CHAR']:
+        if other_char not in other_chars:
+            a = 1
+            other_chars.append(other_char)
+    for other_char in probs_dict['OTHER_CHAR']['INSERT_CHAR']:
+        if other_char not in other_chars:
+            a = 1
+            other_chars.append(other_char)
+    return other_chars
 
 def set_prob(rng, args):
     prob = rng.normal(args.mean, args.stdev)
@@ -76,7 +101,7 @@ def get_working_char(c, probs_dict):
     else:
         return c
 
-def add_noise(text, rng, args, probs_dict):
+def add_noise(text, rng, args, probs_dict, other_chars):
     block_sizes = generate_block_sizes(text, len(text), args.min_block_size, args.max_block_size)
     blocks = generate_blocks(text, block_sizes)
     
@@ -93,11 +118,9 @@ def add_noise(text, rng, args, probs_dict):
                 if p_op < probs_dict[working_c]['DELETE']:
                     pass
                 elif p_op < (probs_dict[working_c]['DELETE'] + probs_dict[working_c]['REPLACE']):
-                    p_char = rng.random()
-                    chars.append(get_other_char(working_c, 'REPLACE', probs_dict, p_char))
+                    chars.append(get_op_char(rng, args, working_c, 'REPLACE', probs_dict, other_chars))
                 else:
-                    p_char = rng.random()
-                    chars.append(get_other_char(working_c, 'INSERT', probs_dict, p_char))
+                    chars.append(get_op_char(rng, args, working_c, 'INSERT', probs_dict, other_chars))
                     chars.append(c)
             
     return ''.join(chars)
@@ -114,12 +137,16 @@ def main(argv):
     
     rng = np.random.default_rng(args.seed)
     
+    other_chars = set_other_chars(probs_dict)
+    for c in other_chars:
+        sys.stderr.write(c + "\n")
+    
     for fn in args.jsonl:
         with open(fn) as f:
             for line in f:
                 indata = json.loads(line)
                 text = indata['text']
-                noised = add_noise(text, rng, args, probs_dict)
+                noised = add_noise(text, rng, args, probs_dict, other_chars)
                 outdata = { 'input': noised, 'output': text }
                 print(json.dumps(outdata, ensure_ascii=False))
     
