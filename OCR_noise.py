@@ -22,6 +22,7 @@ def argparser():
     ap.add_argument('--charset_probs', required=True)
     ap.add_argument('--min-block-size', type=int, default=500)
     ap.add_argument('--max-block-size', type=int, default=2000)
+    ap.add_argument('--other-char-prob', type=float, default=0.05)
     ap.add_argument('jsonl', nargs='+')
     return ap
 
@@ -69,26 +70,26 @@ def generate_blocks(text, block_sizes):
         start = end
     return blocks
 
+def get_working_char(c, probs_dict):
+    if c not in probs_dict or (c == ' ' and SPACE_CHAR not in probs_dict):
+        return 'OTHER_CHAR'
+    else:
+        return c
+
 def add_noise(text, rng, args, probs_dict):
     block_sizes = generate_block_sizes(text, len(text), args.min_block_size, args.max_block_size)
     blocks = generate_blocks(text, block_sizes)
-    
-    #sys.stderr.write(f" Text: {text}\n")
     
     chars = []
     
     for text_block in blocks:
         prob = set_prob(rng, args)
-        #sys.stderr.write(f"Block size: {len(text_block)},\t prob: {prob} \t[{text_block}]\n")
         for c in text_block:
-            if rng.random() > prob:
+            working_c = get_working_char(c, probs_dict)
+            if rng.random() > prob * probs_dict[working_c]['KEEP']:
                 chars.append(c)
             else:
                 p_op = rng.random()
-                if c not in probs_dict or (c == ' ' and SPACE_CHAR not in probs_dict):
-                    working_c = 'OTHER_CHAR'
-                else:
-                    working_c = c
                 if p_op < probs_dict[working_c]['DELETE']:
                     pass
                 elif p_op < (probs_dict[working_c]['DELETE'] + probs_dict[working_c]['REPLACE']):
