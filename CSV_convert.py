@@ -2,11 +2,13 @@ import os
 import csv
 import sys
 import re
+import unicodedata
 
 def preprocessing_text(text):
     text[0] = re.sub('[\n\t]', ' ', text[0])
     text[0] = text[0].strip()
     text[0] = re.sub(' +', ' ', text[0])
+    text[0] = ''.join(c for c in text[0] if unicodedata.category(c)[0] != 'C')
     return text
 
 def convert_csv(csv_dir, output_dir):

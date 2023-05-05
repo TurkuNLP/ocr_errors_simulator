@@ -138,9 +138,7 @@ def main(argv):
     rng = np.random.default_rng(args.seed)
     
     other_chars = set_other_chars(probs_dict)
-    for c in other_chars:
-        sys.stderr.write(c + "\n")
-    
+        
     for fn in args.jsonl:
         with open(fn) as f:
             for line in f:
