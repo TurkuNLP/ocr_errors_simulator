@@ -18,7 +18,7 @@ def argparser():
     ap.add_argument('--max-error-prob', type=float, default=0.5)
     ap.add_argument('--delete-prob', type=float, default=0.1)
     ap.add_argument('--insert-prob', type=float, default=0.1)
-    ap.add_argument('--charset', default=DEFAULT_CHARSET)
+    ap.add_argument('--charset')
     ap.add_argument('--charset_probs', required=True)
     ap.add_argument('--min-block-size', type=int, default=500)
     ap.add_argument('--max-block-size', type=int, default=2000)
@@ -45,21 +45,28 @@ def get_other_char(rng, other_chars):
         return other_char
     return ' '
 
-def set_other_chars(probs_dict):
-    other_chars = [c for c in DEFAULT_CHARSET]
+def set_default_char(args):
+    if args.charset == None:
+        return [c for c in DEFAULT_CHARSET]
+    else:
+        charset = []
+        with open(args.charset) as f:
+            content = f.read()
+            for c in content:
+                charset.append(c)
+        return charset
+
+def set_other_chars(probs_dict, default_charset):
     for other_char in probs_dict:
-        if other_char != 'OTHER_CHAR' and other_char not in other_chars:
-            a = 1
-            other_chars.append(other_char)
+        if other_char != 'OTHER_CHAR' and other_char not in default_charset:
+            default_charset.append(other_char)
     for other_char in probs_dict['OTHER_CHAR']['REPLACE_CHAR']:
-        if other_char not in other_chars:
-            a = 1
-            other_chars.append(other_char)
+        if other_char not in default_charset:
+            default_charset.append(other_char)
     for other_char in probs_dict['OTHER_CHAR']['INSERT_CHAR']:
-        if other_char not in other_chars:
-            a = 1
-            other_chars.append(other_char)
-    return other_chars
+        if other_char not in default_charset:
+            default_charset.append(other_char)
+    return sorted(default_charset)
 
 def set_prob(rng, args):
     prob = rng.normal(args.mean, args.stdev)
@@ -96,10 +103,13 @@ def generate_blocks(text, block_sizes):
     return blocks
 
 def get_working_char(c, probs_dict):
-    if c not in probs_dict or (c == ' ' and SPACE_CHAR not in probs_dict):
+    if c not in probs_dict:
         return 'OTHER_CHAR'
     else:
-        return c
+        if probs_dict[c]['KEEP'] == 1:
+            return 'OTHER_CHAR'
+        else:
+            return c
 
 def add_noise(text, rng, args, probs_dict, other_chars):
     block_sizes = generate_block_sizes(text, len(text), args.min_block_size, args.max_block_size)
@@ -137,7 +147,17 @@ def main(argv):
     
     rng = np.random.default_rng(args.seed)
     
-    other_chars = set_other_chars(probs_dict)
+    default_charset = set_default_char(args)
+    
+    other_chars = set_other_chars(probs_dict, default_charset)
+    
+    #for i, c in enumerate(sorted(other_chars)):
+    #    sys.stderr.write(f"{c}[{c.encode('raw_unicode_escape')}] - {i}\n")
+    #sys.stderr.write("\n")
+    
+    #for i, c in enumerate(sorted(other_chars)):
+    #    sys.stderr.write(f"{c}")
+    #sys.stderr.write("\n")
         
     for fn in args.jsonl:
         with open(fn) as f:

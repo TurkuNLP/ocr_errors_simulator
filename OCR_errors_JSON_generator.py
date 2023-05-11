@@ -1,40 +1,41 @@
 import Levenshtein as LV
 import json
+import pandas as pd
 import csv
 import sys
 import os
 
+from glob import glob
+from tqdm import tqdm
+
 import OCR_errors_JSON_generator_functions as ocr
 
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
-        print("-- Please use: python3 OCR_errors_JSON_generator.py input_directory output_jsonl")
+    if len(sys.argv) != 4:
+        print("-- Please use: python3 OCR_errors_JSON_generator.py input_directory output_jsonl charset_name")
     else:
         input_dir = sys.argv[1]
         jsonl_name = sys.argv[2]
-        total_pairs = len([file_name for file_name in os.listdir(input_dir) if file_name.endswith('_good.csv')])
-        completed_pairs_init = 0
-        completed_pairs_jsonl = 0
+        charset_name = sys.argv[3]
         
-        for file_name in os.listdir(input_dir):
-            if file_name.endswith('_good.csv'):
-                good_csv_name = os.path.join(input_dir, file_name)
-                if completed_pairs_init == 0:
-                    ocr.init_json_file(good_csv_name, jsonl_name)
-                else:
-                    ocr.init_json_file(good_csv_name, jsonl_name, True)
-                completed_pairs_init += 1
-                percentage = 100*completed_pairs_init/total_pairs
-                print(f"Completed pairs {completed_pairs_init}/{total_pairs} ({percentage:.1f}%)")
+        json_content = {}
         
-        for file_name in os.listdir(input_dir):
-            if file_name.endswith('_good.csv'):
-                good_csv_name = os.path.join(input_dir, file_name)
-                error_csv_name = os.path.join(input_dir, file_name.replace('_good.csv', '_error.csv'))
-                ocr.add_all_data_to_json(good_csv_name, error_csv_name, jsonl_name)
-                completed_pairs_jsonl += 1
-                percentage = 100*completed_pairs_jsonl/total_pairs
-                print(f"Completed pairs {completed_pairs_jsonl}/{total_pairs} ({percentage:.1f}%)")
+        csv_files = glob(os.path.join(input_dir, '*_converted.csv'))
+        dataframe = pd.concat([pd.read_csv(file) for file in tqdm(csv_files, desc="Dataframe creation", unit=" files")])
+        dataframe = dataframe.reset_index(drop=True)
+        
+        ocr.init_json_file(dataframe, json_content)
+        
+        with open(charset_name, 'r', encoding='utf-8') as charset:
+            while (char := charset.read(1)):
+                ocr.update_unknown_char(json_content, char, 1, 1)
+        
+        for index, row in tqdm(dataframe.iterrows(), total=len(dataframe), desc="Data processing   ", unit=" pairs"):
+            ocr.add_data_to_json(row['input'], row['output'], json_content)
+        
+        with open(jsonl_name, 'w', encoding='utf-8') as json_file:
+            json_file.write(json.dumps(json_content, indent=4))
         
         ocr.int_to_probabilities(jsonl_name)
+        #ocr.print_low_count(jsonl_name)
         ocr.json2jsonl(jsonl_name, jsonl_name)

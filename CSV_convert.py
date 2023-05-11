@@ -5,10 +5,10 @@ import re
 import unicodedata
 
 def preprocessing_text(text):
-    text[0] = re.sub('[\n\t]', ' ', text[0])
-    text[0] = text[0].strip()
-    text[0] = re.sub(' +', ' ', text[0])
-    text[0] = ''.join(c for c in text[0] if unicodedata.category(c)[0] != 'C')
+    text = re.sub('[\n\t]', ' ', text)
+    text = text.strip()
+    text = re.sub(' +', ' ', text)
+    text = ''.join(c for c in text if unicodedata.category(c) == 'Zs' or c.isprintable())
     return text
 
 def convert_csv(csv_dir, output_dir):
@@ -17,22 +17,18 @@ def convert_csv(csv_dir, output_dir):
     for file_name in os.listdir(csv_dir):
         if file_name.endswith('.csv'):
             input_csv_path = os.path.join(csv_dir, file_name)
-            good_csv_path = os.path.join(output_dir, file_name.replace('.csv', '_good.csv'))
-            error_csv_path = os.path.join(output_dir, file_name.replace('.csv', '_error.csv'))
+            output_csv_path = os.path.join(output_dir, file_name.replace('.csv', '_converted.csv'))
             
             try:
-                with open(input_csv_path, 'r', encoding='utf-8') as input_csv, open(good_csv_path, 'w', encoding='utf-8') as good_csv, open(error_csv_path, 'w', encoding='utf-8') as error_csv:
+                with open(input_csv_path, 'r', encoding='utf-8') as input_csv, open(output_csv_path, 'w', encoding='utf-8') as output_csv:
                     reader = csv.reader(input_csv)
                     header = next(reader)
-                    good_writer = csv.writer(good_csv)
-                    error_writer = csv.writer(error_csv)
+                    output_writer = csv.writer(output_csv)
                     
-                    good_writer.writerow(['good_texts'])
-                    error_writer.writerow(['error_texts'])
+                    output_writer.writerow(['input', 'output'])
         
                     for row in reader:
-                        good_writer.writerow(preprocessing_text([row[2]]))
-                        error_writer.writerow(preprocessing_text([row[1]]))
+                        output_writer.writerow([preprocessing_text(row[1]), preprocessing_text(row[2])])
                 
                 completed_files += 1
                 progress_percentage = (completed_files / total_files) * 100
