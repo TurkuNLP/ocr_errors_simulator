@@ -19,7 +19,7 @@ def argparser():
     ap.add_argument('--delete-prob', type=float, default=0.1)
     ap.add_argument('--insert-prob', type=float, default=0.1)
     ap.add_argument('--charset')
-    ap.add_argument('--charset_probs', required=True)
+    ap.add_argument('--charset-probs', required=True)
     ap.add_argument('--min-block-size', type=int, default=500)
     ap.add_argument('--max-block-size', type=int, default=2000)
     ap.add_argument('--other-char-prob', type=float, default=0.05)
