@@ -75,7 +75,8 @@ def correct_ocr_noise(text, language, key, model, index, log, total_tokens):
                 f.write('\n')
         result = response["choices"][0]["message"]["content"]
         tokens = response["usage"]["total_tokens"]
-        return pattern_matching(result, text), tokens
+        b, text = pattern_matching(result, text)
+        return b, text, tokens
     except openai.OpenAIError as e:
         sys.stderr.write(f"OpenAIError occured at index: {index} (OCR correction)\n")
         sys.stderr.write(f"Error message: {str(e)}\n")
