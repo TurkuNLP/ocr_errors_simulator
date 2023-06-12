@@ -1,7 +1,5 @@
 import pip
 
-#pip.main(['install', 'pandas'])
-
 import sys
 import json
 import csv
@@ -17,7 +15,7 @@ from argparse import ArgumentParser
 
 MAX_LINES = 207614
 
-QUESTION = "If possible, please correct the OCR noise in the following {} text and provide the corrected version (in the original language) in an answer which should look like this 'Answer: \"text\"'. Here's the text:\n\"{}\""
+QUESTION = "Please correct the OCR noise in the following text and provide the corrected version, do not translate or complete the text. Give an answer in this format 'Answer: \"text\"'. Here's the text:\n\"{}\""
 
 def argparser():
     ap = ArgumentParser()
@@ -33,7 +31,6 @@ def argparser():
     ap.add_argument('--end', type=int)
     ap.add_argument('--replace', type=str, default='False')
     ap.add_argument('--check', type=str)
-    ap.add_argument('jsonl')
     return ap
 
 def str2bool(s):
@@ -42,9 +39,9 @@ def str2bool(s):
     return False
 
 def token_count(text, language, model):
-    question = QUESTION.format(language, "user\n" + text)
+    prompt = QUESTION.format(text)
     encoding = tiktoken.encoding_for_model(model)
-    token_count = len(encoding.encode(question)) + 6
+    token_count = len(encoding.encode("user")) + len(encoding.encode(prompt)) + 6
     return token_count
 
 def pattern_matching(text, ocr_text):
@@ -61,11 +58,11 @@ def pattern_matching(text, ocr_text):
     return True, res
 
 def correct_ocr_noise(text, language, key, model, index, log, total_tokens):
-    prompt = QUESTION.format(language, text)
+    prompt = QUESTION.format(text)
     messages = [{"role": "user", "content":prompt}]
     try:
         openai.api_key = key
-        response = openai.ChatCompletion.create(model = model, messages = messages)
+        response = openai.ChatCompletion.create(model = model, messages = messages, max_tokens=450)
         if log is not None:
             response_json = response.to_dict()
             response_json['question'] = prompt
