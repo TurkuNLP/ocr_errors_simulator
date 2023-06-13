@@ -91,6 +91,10 @@ def get_jsonl_files(jsonl_files_name):
             jsonl_files.append(pattern)
     return jsonl_files
 
+def extract_index(file_name):
+    match = re.findall(r"\d+", file_name)
+    return int(match[-1]) if match else -1
+
 def main(argv):
     args = argparser().parse_args()
     
@@ -100,6 +104,7 @@ def main(argv):
     nb_ids = int(args.nb_ids)
     
     jsonl_files = get_jsonl_files(args.jsonl)
+    jsonl_files = sorted(jsonl_files, key=extract_index)
     
     data_gallica = get_ids(jsonl_files, args.chunk_size)
     

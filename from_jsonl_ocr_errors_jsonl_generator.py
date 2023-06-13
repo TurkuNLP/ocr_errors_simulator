@@ -4,6 +4,8 @@ import pandas as pd
 import csv
 import sys
 import os
+import re
+import unicodedata
 
 from glob import glob
 from tqdm import tqdm
@@ -18,13 +20,20 @@ def argparser():
     ap.add_argument('--output-jsonl', required=True)
     return ap
 
+def preprocessing_text(text):
+    text = re.sub('[\n\t]', ' ', text)
+    text = text.strip()
+    text = re.sub(' +', ' ', text)
+    text = ''.join(c for c in text if unicodedata.category(c) == 'Zs' or c.isprintable())
+    return text
+
 def get_dataframe(jsonl_files):
     l = []
     for jsonl_file in jsonl_files:
         with open(jsonl_file, 'rt', encoding='utf-8') as f:
             for line in f:
                 json_obj = json.loads(line)
-                l.append((json_obj.get('input'), json_obj.get('output')))
+                l.append((preprocessing_text(json_obj.get('input')), preprocessing_text(json_obj.get('output'))))
     columns = ['input', 'output']
     return pd.DataFrame(l, columns=columns)
 

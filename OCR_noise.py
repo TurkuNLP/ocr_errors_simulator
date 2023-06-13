@@ -5,6 +5,7 @@ import numpy as np
 
 from string import ascii_letters, digits, punctuation
 from argparse import ArgumentParser
+from tqdm import tqdm
 
 # Default set of characters that can be substituted for
 DEFAULT_CHARSET = ascii_letters + digits + punctuation + ' '
@@ -161,7 +162,7 @@ def main(argv):
         
     for fn in args.jsonl:
         with open(fn) as f:
-            for line in f:
+            for line in tqdm(f, desc="Texts"):
                 indata = json.loads(line)
                 text = indata['text']
                 noised = add_noise(text, rng, args, probs_dict, other_chars)

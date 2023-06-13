@@ -219,6 +219,7 @@ def main(argv):
     dataframe, processed_indexes = get_processed_indexes(args.fixed_output, args.unfixed_output, ids, replace)
     print(len(ids))
     print(len(dataframe))
+    print(args.start, args.limit)
     
     estimate_cost(dataframe, language, model)
     
