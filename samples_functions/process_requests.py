@@ -22,7 +22,6 @@ def argparser():
     ap.add_argument('--end', type=int)
     ap.add_argument('--replace', type=str, default='False')
     ap.add_argument('--check', type=str)
-    ap.add_argument('jsonl')
     return ap
 
 def pattern_matching(text, ocr_text):
