@@ -104,6 +104,7 @@ def main(argv):
     log = args.debug_log
 
     dataframe = get_responses_dataframe(log, ids)
+    dataframe = dataframe.sort_values('index')
 
     wrong = 0
     for i, row in dataframe.iterrows():

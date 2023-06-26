@@ -15,6 +15,8 @@ def argparser():
     ap.add_argument('--p-graph', required=True)
     ap.add_argument('--f-graph', required=True)
     ap.add_argument('--precision', type=int, required=True)
+    ap.add_argument('--min-size', type=int, default=700)
+    ap.add_argument('--max-size', type=int, default=1300)
     return ap
 
 def get_label(n, p):
@@ -55,9 +57,21 @@ def create_graph(df, graph, p, color, marker):
     y_values = [label_counts.get(label, 0) for label in labels]
     print("labels:", list(labels))
     print("counts:", y_values)
-    plt.bar(x_values, y_values, width=50.0, align='center', color=color, edgecolor=color)
-    plt.ylim([0, 300])
+    bars = plt.bar(x_values, y_values, width=50.0*p/100, align='center', color=color, edgecolor=color)
+    plt.xticks(x_values, labels, rotation=45, fontsize=max(3, p/10))
+    plt.xlabel('Size bins')
+    plt.ylabel('Counts')
+    # plt.ylim([0, 300])
+    
+    annotations = []
+    for bar, y_val in zip(bars, y_values):
+        annotation = plt.text(bar.get_x() + bar.get_width() / 2, bar.get_height(), y_val, ha='center', va='bottom', fontsize=max(3, p/10), rotation=45)
+        annotations.append(annotation)
+    
     plt.savefig(graph)
+    
+    for annotation in annotations:
+        annotation.remove()
     
 def show_text(index, input_text, output_text):
     print("##############")
@@ -92,8 +106,10 @@ def main(argv):
     f_graph = args.f_graph
     p = args.precision
     final_samples = args.final_samples
+    min_size = args.min_size
+    max_size = args.max_size
     p_df = get_dataframe(potential_samples, p)
-    f_df = p_df[(p_df['output_size'] > 700) & (p_df['output_size'] < 1300)]
+    f_df = p_df[(p_df['output_size'] > min_size) & (p_df['output_size'] < max_size)]
     f_df = filter_df(f_df)
     print(len(f_df), '/', len(p_df))
     
@@ -102,6 +118,7 @@ def main(argv):
     sorted_df = f_df.sort_values(by='output_size', ascending=False)
     show_texts(sorted_df)
     
+    plt.figure(dpi=200)
     create_graph(p_df, p_graph, p, 'red', 'o')
     create_graph(f_df, f_graph, p, 'green', 'x')
     save_dataframe(final_samples, f_df)
